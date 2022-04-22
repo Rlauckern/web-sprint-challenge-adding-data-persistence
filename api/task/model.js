@@ -1,38 +1,36 @@
-// build your `Task` model here
-const db = require('../../data/dbConfig');
+const db = require("../../data/dbConfig");
 
 async function getAllTasks() {
-    const tasks = await db('tasks as t')
-        .select(
-            't.task_id',
-            't.task_description',
-            't.task_notes',
-            't.task_completed',
-            'p.project_name',
-            'p.project_description'
-        )
-        .join('projects as p', 't.project_id', 'p.project_id');
-
-    tasks.forEach((task) => {
-        task.task_completed = !!task.task_completed
-    })
-    return tasks;
+  let tasks = await db("tasks as t")
+    .leftJoin("projects as p", "p.project_id", "t.project_id")
+    .select(
+      "t.task_id",
+      "t.task_completed",
+      "t.task_notes",
+      "t.task_description",
+      "p.project_description",
+      "p.project_name",
+      
+    );
+  tasks.forEach((task) => {
+    task.task_completed === 0 || !task.task_completed
+      ? (task.task_completed = false)
+      : (task.task_completed = true);
+  });
+  return tasks;
 }
 
 async function getTaskById(id) {
-    const [task] = await db('tasks')
-        .where('task_id', id);
-
-    task.task_completed = !!task.task_completed
-    return task;
+  let task = await db("tasks").where("task_id", id).first();
+  task.task_completed === 0 || !task.task_completed
+    ? (task.task_completed = false)
+    : (task.task_completed = true);
+  return task;
 }
 
 async function createTask(task) {
-    const [id] = await db('tasks')
-        .insert(task);
-
-    const created = await getTaskById(id);
-    return created;
+  const [task_id] = await db("tasks").insert(task);
+  return getTaskById(task_id);
 }
 
 module.exports = { getAllTasks, getTaskById, createTask };
